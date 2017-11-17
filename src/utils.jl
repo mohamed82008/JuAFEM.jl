@@ -1,3 +1,19 @@
+const DEBUG = true
+
+@static if DEBUG
+    @eval begin
+        macro debug(ex)
+            return :($(esc(ex)))
+        end
+    end
+else
+     @eval begin
+        macro debug(ex)
+            return nothing
+        end
+    end
+end
+
 mutable struct ScalarWrapper{T}
     x::T
 end

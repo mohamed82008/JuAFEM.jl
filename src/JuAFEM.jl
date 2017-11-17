@@ -46,7 +46,8 @@ include(joinpath("Grid", "grid.jl"))
 include(joinpath("Grid", "grid_generators.jl"))
 
 # Dofs
-include(joinpath("Dofs", "DofHandler.jl"))
+# include(joinpath("Dofs", "DofHandler.jl"))
+include(joinpath("Dofs", "DofHandler2.jl"))
 include(joinpath("Dofs", "DirichletBoundaryConditions.jl"))
 
 include("iterators.jl")

@@ -85,6 +85,22 @@ Returns the number of base functions for an [`Interpolation`](@ref) or `Values` 
 """
 getnbasefunctions
 
+# The following functions are used to distribute the dofs. Definitions:
+#   vertexdof: dof on a "corner" of the reference shape
+#   facedof: dof in the dim-1 dimension (line in 2D, surface in 3D)
+#   edgedof: dof on a line between 2 vertices (i.e. "corners") (3D only)
+#   celldof: dof that is local to the element
+
+# Fallbacks for the interpolations which are used to distribute the dofs correctly
+nvertexdofs(::Interpolation) = 0
+nedgedofs(::Interpolation) = 0
+nfacedofs(::Interpolation) = 0
+ncelldofs(::Interpolation) = 0
+hasvertexdofs(ip::Interpolation) = nvertexdofs(ip) > 0
+hasedgedofs(ip::Interpolation) = nedgedofs(ip) > 0
+hasfacedofs(ip::Interpolation) = nfacedofs(ip) > 0
+hascelldofs(ip::Interpolation) = ncelldofs(ip) > 0
+
 ############
 # Lagrange #
 ############
@@ -97,6 +113,7 @@ getlowerorder(::Lagrange{dim,shape,order}) where {dim,shape,order} = Lagrange{di
 # Lagrange dim 1 RefCube order 1 #
 ##################################
 getnbasefunctions(::Lagrange{1, RefCube, 1}) = 2
+nvertexdofs(::Lagrange{1,RefCube,1}) = 1
 
 function value(ip::Lagrange{1, RefCube, 1}, i::Int, ξ::Vec{1})
     @inbounds begin
@@ -111,6 +128,8 @@ end
 # Lagrange dim 1 RefCube order 2 #
 ##################################
 getnbasefunctions(::Lagrange{1, RefCube, 2}) = 3
+nvertexdofs(::Lagrange{1,RefCube,2}) = 1
+ncelldofs(::Lagrange{1,RefCube,2}) = 1
 
 function value(ip::Lagrange{1, RefCube, 2}, i::Int, ξ::Vec{1})
     @inbounds begin
@@ -126,6 +145,7 @@ end
 # Lagrange dim 2 RefCube order 1 #
 ##################################
 getnbasefunctions(::Lagrange{2, RefCube, 1}) = 4
+nvertexdofs(::Lagrange{2,RefCube,1}) = 1
 
 function value(ip::Lagrange{2, RefCube, 1}, i::Int, ξ::Vec{2})
     @inbounds begin
@@ -143,6 +163,9 @@ end
 # Lagrange dim 2 RefCube order 2 #
 ##################################
 getnbasefunctions(::Lagrange{2, RefCube, 2}) = 9
+nvertexdofs(::Lagrange{2,RefCube,2}) = 1
+nfacedofs(::Lagrange{2,RefCube,2}) = 1
+ncelldofs(::Lagrange{2,RefCube,2}) = 1
 
 function value(ip::Lagrange{2, RefCube, 2}, i::Int, ξ::Vec{2})
     @inbounds begin
@@ -166,6 +189,7 @@ end
 #########################################
 getnbasefunctions(::Lagrange{2, RefTetrahedron, 1}) = 3
 getlowerdim(::Lagrange{2, RefTetrahedron, order}) where {order} = Lagrange{1, RefCube, order}()
+nvertexdofs(::Lagrange{2,RefTetrahedron,1}) = 1
 
 function value(ip::Lagrange{2, RefTetrahedron, 1}, i::Int, ξ::Vec{2})
     @inbounds begin
@@ -182,6 +206,8 @@ end
 # Lagrange dim 2 RefTetrahedron order 2 #
 #########################################
 getnbasefunctions(::Lagrange{2, RefTetrahedron, 2}) = 6
+nvertexdofs(::Lagrange{2,RefTetrahedron,2}) = 1
+nfacedofs(::Lagrange{2,RefTetrahedron,2}) = 1
 
 function value(ip::Lagrange{2, RefTetrahedron, 2}, i::Int, ξ::Vec{2})
     @inbounds begin
@@ -202,6 +228,7 @@ end
 # Lagrange dim 3 RefTetrahedron order 1 #
 #########################################
 getnbasefunctions(::Lagrange{3, RefTetrahedron, 1}) = 4
+nvertexdofs(::Lagrange{3,RefTetrahedron,1}) = 1
 
 function value(ip::Lagrange{3, RefTetrahedron, 1}, i::Int, ξ::Vec{3})
     @inbounds begin
@@ -220,6 +247,8 @@ end
 # Lagrange dim 3 RefTetrahedron order 2 #
 #########################################
 getnbasefunctions(::Lagrange{3, RefTetrahedron, 2}) = 10
+nvertexdofs(::Lagrange{3,RefTetrahedron,2}) = 1
+nedgedofs(::Lagrange{3,RefTetrahedron,2}) = 1
 
 # http://www.colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch09.d/AFEM.Ch09.pdf
 # http://www.colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.Ch10.d/AFEM.Ch10.pdf
@@ -246,6 +275,7 @@ end
 # Lagrange dim 3 RefCube order 1 #
 ##################################
 getnbasefunctions(::Lagrange{3, RefCube, 1}) = 8
+nvertexdofs(::Lagrange{3,RefCube,1}) = 1
 
 function value(ip::Lagrange{3, RefCube, 1}, i::Int, ξ::Vec{3})
     @inbounds begin
@@ -275,6 +305,8 @@ struct Serendipity{dim, shape, order} <: Interpolation{dim, shape, order} end
 getnbasefunctions(::Serendipity{2, RefCube, 2}) = 8
 getlowerdim(::Serendipity{2, RefCube, 2}) = Lagrange{1, RefCube, 2}()
 getlowerorder(::Serendipity{2, RefCube, 2}) = Lagrange{2, RefCube, 1}()
+nvertexdofs(::Serendipity{2,RefCube,2}) = 1
+nedgedofs(::Serendipity{2,RefCube,2}) = 1
 
 function value(ip::Serendipity{2, RefCube, 2}, i::Int, ξ::Vec{2})
     @inbounds begin

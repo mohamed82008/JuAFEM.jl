@@ -223,3 +223,27 @@ const celltypes = Dict{DataType, String}(Cell{1, 2, 2}  => "Line",
                                          Cell{3, 10, 4} => "QuadraticTetrahedron",
                                          Cell{3, 8, 6}  => "Hexahedron",
                                          Cell{3, 20, 6} => "QuadraticHexahedron")
+
+# We define the following functions to uniquely identify vertices, edges
+# and faces when distributing dofs over a mesh.
+# fallbacks
+vertices(::Cell) = throw(ArgumentError("this should never be called"))
+edges(::Cell) = throw(ArgumentError("this should never be called"))
+faces(::Cell) = throw(ArgumentError("this should never be called"))
+
+# Line/QuadraticLine
+vertices(c::Union{Line,QuadraticLine}) = (c.nodes[1], c.nodes[2]) # TODO: This is just c.nodes for Line ...
+# Triangle/QuadraticTriangle
+vertices(c::Union{Triangle,QuadraticTriangle}) = (c.nodes[1], c.nodes[2], c.nodes[3]) # TODO: This is just c.nodes for Triangle ...
+faces(c::Union{Triangle,QuadraticTriangle}) = ((c.nodes[1],c.nodes[2]), (c.nodes[2],c.nodes[3]), (c.nodes[3],c.nodes[1]))
+# Quadrilateral/QuadraticQuadrilateral
+vertices(c::Union{Quadrilateral,QuadraticQuadrilateral}) = (c.nodes[1], c.nodes[2], c.nodes[3], c.nodes[4]) # TODO: This is just c.nodes for Quadrilateral ...
+faces(c::Union{Quadrilateral,QuadraticQuadrilateral}) = ((c.nodes[1],c.nodes[2]), (c.nodes[2],c.nodes[3]), (c.nodes[3],c.nodes[4]), (c.nodes[4],c.nodes[1]))
+# Tetrahedron/QuadraticTetrahedron
+vertices(c::Union{Tetrahedron,QuadraticTetrahedron}) = (c.nodes[1], c.nodes[2], c.nodes[3], c.nodes[4]) # TODO: This is just c.nodes for Tetrahedron ...
+edges(c::Union{Tetrahedron,QuadraticTetrahedron}) = error("not implemented yet...")
+faces(c::Union{Tetrahedron,QuadraticTetrahedron}) = error("not implemented yet...")
+# Hexahedron/QuadraticHexahedron
+vertices(c::Union{Hexahedron,QuadraticHexahedron}) = (c.nodes[1], c.nodes[2], c.nodes[3], c.nodes[4], c.nodes[5], c.nodes[6], c.nodes[7], c.nodes[8]) # TODO: This is just c.nodes for Hexahedron ...
+edges(c::Union{Hexahedron,QuadraticHexahedron}) = error("not implemented yet...")
+faces(c::Union{Hexahedron,QuadraticHexahedron}) = error("not implemented yet...")
