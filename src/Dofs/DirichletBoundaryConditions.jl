@@ -39,27 +39,26 @@ julia> apply!(u, dbc)
 ```
 
 """
-struct DirichletBoundaryCondition
+struct DirichletBoundaryCondition{TI}
     f::Function
-    nodes::Set{Int}
+    nodes::Set{TI}
     field::Symbol
-    components::Vector{Int}
-    idxoffset::Int
+    components::Vector{TI}
+    idxoffset::TI
 end
 
-struct DirichletBoundaryConditions{DH <: DofHandler, T}
-    bcs::Vector{DirichletBoundaryCondition}
-    dofs::Vector{Int}
-    free_dofs::Vector{Int}
+struct DirichletBoundaryConditions{DH <: DofHandler, T, TI}
+    bcs::Vector{DirichletBoundaryCondition{TI}}
+    dofs::Vector{TI}
+    free_dofs::Vector{TI}
     values::Vector{T}
-    dofmapping::Dict{Int, Int} # global dof -> index into dofs and values
+    dofmapping::Dict{TI, TI} # global dof -> index into dofs and values
     dh::DH
     closed::ScalarWrapper{Bool}
 end
-
-function DirichletBoundaryConditions(dh::DofHandler)
+function DirichletBoundaryConditions(dh::DofHandler{dim, N, T, M, TI}) where {dim, N, T, M, TI<:Integer}
     @assert isclosed(dh)
-    DirichletBoundaryConditions(DirichletBoundaryCondition[], Int[], Int[], Float64[], Dict{Int,Int}(), dh, ScalarWrapper(false))
+    DirichletBoundaryConditions(DirichletBoundaryCondition{TI}[], TI[], TI[], T[], Dict{TI,TI}(), dh, ScalarWrapper(false))
 end
 
 function Base.show(io::IO, dbcs::DirichletBoundaryConditions)
@@ -92,13 +91,13 @@ function close!(dbcs::DirichletBoundaryConditions)
 end
 
 function add!(dbcs::DirichletBoundaryConditions, field::Symbol,
-                          nodes::Union{Set{Int}, Vector{Int}}, f::Function, component::Int=1)
+                          nodes::Union{Set{TI}, Vector{TI}}, f::Function, component::TI=1) where {TI<:Integer}
     add!(dbcs, field, nodes, f, [component])
 end
 
 # Adds a boundary condition
 function add!(dbcs::DirichletBoundaryConditions, field::Symbol,
-                          nodes::Union{Set{Int}, Vector{Int}}, f::Function, components::Vector{Int})
+                          nodes::Union{Set{TI}, Vector{TI}}, f::Function, components::Vector{TI}) where {TI<:Integer}
     field in dbcs.dh.field_names || error("field $field does not exist in the dof handler, existing fields are $(dh.field_names)")
     for component in components
         0 < component <= ndim(dbcs.dh, field) || error("component $component is not within the range of field $field which has $(ndim(dbcs.dh, field)) dimensions")
@@ -108,7 +107,7 @@ function add!(dbcs::DirichletBoundaryConditions, field::Symbol,
         warn("added Dirichlet BC to node set containing 0 nodes")
     end
 
-    dofs_bc = Int[]
+    dofs_bc = TI[]
     offset = dof_offset(dbcs.dh, field)
     for node in nodes
         for component in components
@@ -123,12 +122,12 @@ function add!(dbcs::DirichletBoundaryConditions, field::Symbol,
     idxoffset = length(dbcs.values)
     resize!(dbcs.values, length(dbcs.values) + n_bcdofs)
 
-    push!(dbcs.bcs, DirichletBoundaryCondition(f, Set(nodes), field, components, idxoffset))
+    push!(dbcs.bcs, DirichletBoundaryCondition{TI}(f, Set(nodes), field, components, idxoffset))
 
 end
 
 # Updates the DBC's to the current time `time`
-function update!(dbcs::DirichletBoundaryConditions, time::Float64 = 0.0)
+function update!(dbcs::DirichletBoundaryConditions, time::Real=0.0)
     @assert dbcs.closed[]
     bc_offset = 0
     for dbc in dbcs.bcs
@@ -138,9 +137,9 @@ function update!(dbcs::DirichletBoundaryConditions, time::Float64 = 0.0)
     end
 end
 
-function _update!(values::Vector{Float64}, f::Function, nodes::Set{Int}, field::Symbol,
-                  components::Vector{Int}, dh::DofHandler, idx_offset::Int,
-                  dofmapping::Dict{Int,Int}, time::Float64)
+function _update!(values::Vector{T}, f::Function, nodes::Set{TI}, field::Symbol,
+                  components::Vector{TI}, dh::DofHandler, idx_offset::TI,
+                  dofmapping::Dict{TI,TI}, time::Real) where {T, TI<:Integer}
     mesh = dh.grid
     offset = dof_offset(dh, field)
     for node in nodes

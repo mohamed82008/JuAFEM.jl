@@ -84,14 +84,14 @@ end
 @inline getsparsemat(a::AssemblerSymmetricSparsityPattern) = a.K.data
 
 start_assemble(f::Vector, K::Union{SparseMatrixCSC, Symmetric}) = start_assemble(K, f)
-function start_assemble(K::SparseMatrixCSC, f::Vector=Float64[])
-    fill!(K.nzval, 0.0)
-    fill!(f, 0.0)
+function start_assemble(K::SparseMatrixCSC, f::Vector=eltype(K)[])
+    fill!(K.nzval, zero(eltype(K)))
+    fill!(f, zero(eltype(f)))
     AssemblerSparsityPattern(K, f, Int[], Int[])
 end
-function start_assemble(K::Symmetric, f::Vector=Float64[])
-    fill!(K.data.nzval, 0.0)
-    fill!(f, 0.0)
+function start_assemble(K::Symmetric, f::Vector=eltype(K)[])
+    fill!(K.data.nzval, zero(eltype(K)))
+    fill!(f, zero(eltype(f)))
     AssemblerSymmetricSparsityPattern(K, f, Int[], Int[])
 end
 

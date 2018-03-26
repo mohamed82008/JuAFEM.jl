@@ -178,7 +178,7 @@ function reinit!(fv::FaceValues{dim}, x::AbstractVector{Vec{dim, T}}, face::Int)
 
     @inbounds for i in 1:length(fv.qr_weights)
         w = fv.qr_weights[i]
-        fefv_J = zero(Tensor{2, dim})
+        fefv_J = zero(Tensor{2, dim, T})
         for j in 1:n_geom_basefuncs
             fefv_J += x[j] ⊗ fv.dMdξ[j, i, cb]
         end

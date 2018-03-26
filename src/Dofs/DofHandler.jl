@@ -74,18 +74,18 @@ julia> vtk_point_data(vtkfile)
 """
 
 # TODO: Make this immutable?
-mutable struct DofHandler{dim, N, T, M}
-    dofs_nodes::Matrix{Int}
-    dofs_cells::Matrix{Int} # TODO <- Is this needed or just extract from dofs_nodes?
+mutable struct DofHandler{dim, N, T, M, TI<:Integer}
+    dofs_nodes::Matrix{TI}
+    dofs_cells::Matrix{TI} # TODO <- Is this needed or just extract from dofs_nodes?
     field_names::Vector{Symbol}
-    dof_dims::Vector{Int}
+    dof_dims::Vector{TI}
     closed::ScalarWrapper{Bool}
-    dofs_vec::Vector{Int}
-    grid::Grid{dim, N, T, M}
+    dofs_vec::Vector{TI}
+    grid::Grid{dim, N, T, M, TI}
 end
 
-function DofHandler(m::Grid)
-    DofHandler(Matrix{Int}(0, 0), Matrix{Int}(0, 0), Symbol[], Int[], ScalarWrapper(false), Int[], m)
+function DofHandler(m::Grid{dim, N, T, M, TI}) where {dim, N, T, M, TI}
+    DofHandler(Matrix{TI}(0, 0), Matrix{TI}(0, 0), Symbol[], TI[], ScalarWrapper(false), TI[], m)
 end
 
 function Base.show(io::IO, dh::DofHandler)
@@ -105,10 +105,10 @@ end
 ndofs(dh::DofHandler) = length(dh.dofs_nodes)
 ndofs_per_cell(dh::DofHandler) = size(dh.dofs_cells, 1)
 isclosed(dh::DofHandler) = dh.closed[]
-dofs_node(dh::DofHandler, i::Int) = dh.dofs_nodes[:, i]
+dofs_node(dh::DofHandler, i::Integer) = dh.dofs_nodes[:, i]
 
 # Stores the dofs for the cell with number `i` into the vector `global_dofs`
-function celldofs!(global_dofs::Vector{Int}, dh::DofHandler, i::Int)
+function celldofs!(global_dofs::Vector{<:Integer}, dh::DofHandler, i::Integer)
     @assert isclosed(dh)
     @assert length(global_dofs) == ndofs_per_cell(dh)
     @inbounds for j in 1:ndofs_per_cell(dh)
@@ -126,7 +126,7 @@ function Base.push!(dh::DofHandler, names::Vector{Symbol}, dims)
 end
 
 # Add a field to the dofhandler ex `push!(dh, :u, 3)`
-function Base.push!(dh::DofHandler, name::Symbol, dim::Int)
+function Base.push!(dh::DofHandler, name::Symbol, dim::Integer)
     @assert !isclosed(dh)
     if name in dh.field_names
         error("duplicate field name")
@@ -172,13 +172,13 @@ function close!(dh::DofHandler)
     return dh
 end
 
-getnvertices(::Type{JuAFEM.Cell{dim, N, M}}) where {dim, N, M} = N
+getnvertices(::Type{JuAFEM.Cell{dim, N, M, TI}}) where {dim, N, M, TI} = N
 
 # Computes the "edof"-matrix
-function add_element_dofs!(dh::DofHandler)
+function add_element_dofs!(dh::DofHandler{dim, N, T, M, TI}) where {dim, N, T, M, TI<:Integer}
     n_elements = getncells(dh.grid)
     n_vertices = getnvertices(getcelltype(dh.grid))
-    element_dofs = Int[]
+    element_dofs = TI[]
     ndofs = size(dh.dofs_nodes, 1)
     for element in 1:n_elements
         offset = 0
@@ -199,14 +199,14 @@ end
 @inline create_sparsity_pattern(dh::DofHandler) = _create_sparsity_pattern(dh, false)
 @inline create_symmetric_sparsity_pattern(dh::DofHandler) = Symmetric(_create_sparsity_pattern(dh, true), :U)
 
-function _create_sparsity_pattern(dh::DofHandler, sym::Bool)
+function _create_sparsity_pattern(dh::DofHandler{dim, _N, T, M, TI}, sym::Bool) where {dim, _N, T, M, TI<:Integer}
     ncells = getncells(dh.grid)
     n = ndofs_per_cell(dh)
     N = sym ? div(n*(n+1), 2) * ncells : n^2 * ncells
     N += ndofs(dh) # always add the diagonal elements
-    I = Int[]; sizehint!(I, N)
-    J = Int[]; sizehint!(J, N)
-    global_dofs = zeros(Int, n)
+    I = TI[]; sizehint!(I, N)
+    J = TI[]; sizehint!(J, N)
+    global_dofs = zeros(TI, n)
     for element_id in 1:ncells
         celldofs!(global_dofs, dh, element_id)
         @inbounds for j in 1:n, i in 1:n
@@ -221,7 +221,7 @@ function _create_sparsity_pattern(dh::DofHandler, sym::Bool)
         push!(I, d)
         push!(J, d)
     end
-    V = zeros(length(I))
+    V = zeros(T, length(I))
     K = sparse(I, J, V)
     return K
 end

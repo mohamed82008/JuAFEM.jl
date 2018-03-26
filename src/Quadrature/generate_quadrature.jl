@@ -86,8 +86,17 @@ const both    = EndPt('B')
 
 # Maximum number of QL iterations used by steig!.
 # You might need to increase this.
-maxiterations = Dict(Float32 => 30, Float64 => 30, BigFloat => 40)
-
+function maxiterations(T)
+    if T === Float32
+        return 30
+    elseif T === Float64  
+        return 30
+    elseif T === BigFloat
+        return 40
+    else 
+        return 40
+    end
+end
 """
 x, w = legendre(T, n, endpt=neither)
 Returns points x and weights w for the n-point Gauss-Legendre rule
@@ -95,7 +104,7 @@ for the interval -1 < x < 1 with weight function w(x) = 1.
 Use endpt=left, right, both for the left Radau, right Radau, Lobatto
 rules.
 """
-function legendre(::Type{T}, n::Integer, endpt::EndPt=neither) where {T<:AbstractFloat}
+function legendre(::Type{T}, n::Integer, endpt::EndPt=neither) where {T<:Real}
     a, b, muzero = legendre_coeff(T, n, endpt)
     return custom_gauss_rule(-one(T), one(T), a, b, muzero, endpt)
 end
@@ -106,12 +115,13 @@ Convenience function with type T = Float64.
 """
 legendre(n, endpt=neither) = legendre(Float64, n, endpt)
 
-function legendre_coeff(::Type{T}, n::Integer, endpt::EndPt) where {T<:AbstractFloat}
-    muzero = convert(T, 2.0)
+function legendre_coeff(::Type{T}, n::Integer, endpt::EndPt) where {T<:Real}
+    muzero = convert(T, 2)
     a = zeros(T, n)
     b = zeros(T, n)
     for i = 1:n
-        b[i] = i / sqrt(convert(T, 4*i^2-1))
+        #b[i] = i / sqrt(convert(T, 4*i^2-1))
+        b[i] = i / sqrt(T(4*i^2-1))
     end
     return a, b, muzero
 end
@@ -125,7 +135,7 @@ for the interval -1 < x < 1 with weight function
 Use endpt=left, right, both for the left Radau, right Radau, Lobatto
 rules.
 """
-function chebyshev(::Type{T}, n::Integer, kind::Integer=1, endpt::EndPt=neither) where {T<:AbstractFloat}
+function chebyshev(::Type{T}, n::Integer, kind::Integer=1, endpt::EndPt=neither) where {T<:Real}
     a, b, muzero = chebyshev_coeff(T, n, kind, endpt)
     return custom_gauss_rule(-one(T), one(T), a, b, muzero, endpt)
 end
@@ -136,7 +146,7 @@ Convenience function with type T = Float64.
 """
 chebyshev(n, kind=1, endpt=neither) = chebyshev(Float64, n, kind, endpt)
 
-function chebyshev_coeff(::Type{T}, n::Integer, kind::Integer, endpt::EndPt) where {T<:AbstractFloat}
+function chebyshev_coeff(::Type{T}, n::Integer, kind::Integer, endpt::EndPt) where {T<:Real}
     muzero = convert(T, pi)
     half = convert(T, 0.5)
     a = zeros(T, n)
@@ -154,7 +164,7 @@ end
 
 function custom_gauss_rule(lo::T, hi::T,
          a::Array{T,1}, b::Array{T,1}, muzero::T, endpt::EndPt,
-         maxits::Integer=maxiterations[T]) where {T<:AbstractFloat}
+         maxits::Integer=maxiterations(T)) where {T<:Real}
     #
     # On entry:
     #
@@ -197,7 +207,8 @@ function custom_gauss_rule(lo::T, hi::T,
         end
         g = solve(n, lo, a, b)
         t1 = ( hi - lo ) / ( g - solve(n, hi, a, b) )
-        b[n-1] = sqrt(t1)
+        #b[n-1] = sqrt(t1)
+        b[n-1] = t1^(T(1)/2)
         a[n] = lo + g * t1
     end
     w = zero(a)
@@ -209,7 +220,7 @@ function custom_gauss_rule(lo::T, hi::T,
     return a[idx], w[idx]
 end
 
-function solve(n::Integer, shift::T, a::Array{T,1}, b::Array{T,1}) where {T<:AbstractFloat}
+function solve(n::Integer, shift::T, a::Array{T,1}, b::Array{T,1}) where {T<:Real}
     #
     # Perform elimination to find the nth component s = delta[n]
     # of the solution to the nxn linear system
@@ -227,7 +238,7 @@ function solve(n::Integer, shift::T, a::Array{T,1}, b::Array{T,1}) where {T<:Abs
     return one(t) / t
 end
 
-function steig!(d::Array{T,1}, e::Array{T,1}, z::Array{T,1}, maxits::Integer) where {T<:AbstractFloat}
+function steig!(d::Array{T,1}, e::Array{T,1}, z::Array{T,1}, maxits::Integer) where {T<:Real}
     #
     # Finds the eigenvalues and first components of the normalised
     # eigenvectors of a symmetric tridiagonal matrix by the implicit
@@ -320,12 +331,13 @@ function steig!(d::Array{T,1}, e::Array{T,1}, z::Array{T,1}, maxits::Integer) wh
 end
 
 function orthonormal_poly(x::Array{T,1},
-                         a::Array{T,1}, b::Array{T,1}, muzero::T) where {T<:AbstractFloat}
+                         a::Array{T,1}, b::Array{T,1}, muzero::T) where {T<:Real}
     # p[i,j] = value at x[i] of orthonormal polynomial of degree j-1.
     m = length(x)
     n = length(a)
     p = zeros(T, m, n+1)
     c = one(T) / sqrt(muzero)
+    #c = one(T) / muzero^(T(0.5))
     rb = one(T) / b[1]
     for i = 1:m
         p[i,1] = c

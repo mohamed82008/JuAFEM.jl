@@ -60,16 +60,16 @@ function CellScalarValues(::Type{T}, quad_rule::QuadratureRule{dim, shape}, func
 
     @assert getdim(func_interpol) == getdim(geom_interpol)
     @assert getrefshape(func_interpol) == getrefshape(geom_interpol) == shape
-    n_qpoints = length(getweights(quad_rule))
+    n_qpoints = Int(length(getweights(quad_rule)))
 
     # Function interpolation
-    n_func_basefuncs = getnbasefunctions(func_interpol)
+    n_func_basefuncs = Int(getnbasefunctions(func_interpol))
     N    = fill(zero(T)           * T(NaN), n_func_basefuncs, n_qpoints)
     dNdx = fill(zero(Vec{dim, T}) * T(NaN), n_func_basefuncs, n_qpoints)
     dNdξ = fill(zero(Vec{dim, T}) * T(NaN), n_func_basefuncs, n_qpoints)
 
     # Geometry interpolation
-    n_geom_basefuncs = getnbasefunctions(geom_interpol)
+    n_geom_basefuncs = Int(getnbasefunctions(geom_interpol))
     M    = fill(zero(T)           * T(NaN), n_geom_basefuncs, n_qpoints)
     dMdξ = fill(zero(Vec{dim, T}) * T(NaN), n_geom_basefuncs, n_qpoints)
 
@@ -147,20 +147,20 @@ function CellVectorValues(::Type{T}, quad_rule::QuadratureRule{dim, shape}, func
 end
 
 function reinit!(cv::CellValues{dim}, x::AbstractVector{Vec{dim, T}}) where {dim, T}
-    n_geom_basefuncs = getngeobasefunctions(cv)
-    n_func_basefuncs = getn_scalarbasefunctions(cv)
+    n_geom_basefuncs = Int(getngeobasefunctions(cv))
+    n_func_basefuncs = Int(getn_scalarbasefunctions(cv))
     @assert length(x) == n_geom_basefuncs
     isa(cv, CellVectorValues) && (n_func_basefuncs *= dim)
 
 
     @inbounds for i in 1:length(cv.qr_weights)
         w = cv.qr_weights[i]
-        fecv_J = zero(Tensor{2, dim})
+        fecv_J = zero(Tensor{2, dim, T})
         for j in 1:n_geom_basefuncs
             fecv_J += x[j] ⊗ cv.dMdξ[j, i]
         end
         detJ = det(fecv_J)
-        detJ > 0.0 || throw(ArgumentError("det(J) is not positive: det(J) = $(detJ)"))
+        detJ > T(0) || throw(ArgumentError("det(J) is not positive: det(J) = $(detJ)"))
         cv.detJdV[i] = detJ * w
         Jinv = inv(fecv_J)
         for j in 1:n_func_basefuncs
