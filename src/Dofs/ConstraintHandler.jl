@@ -48,11 +48,11 @@ end
 
 Collection of constraints.
 """
-struct ConstraintHandler{DH<:DofHandler,T}
+struct ConstraintHandler{DH<:DofHandler,T,TV<:AbstractArray{T},TPDofs,TFDofs}
     dbcs::Vector{Dirichlet}
-    prescribed_dofs::Vector{Int}
-    free_dofs::Vector{Int}
-    values::Vector{T}
+    prescribed_dofs::TPDofs
+    free_dofs::TFDofs
+    values::TV
     dofmapping::Dict{Int,Int} # global dof -> index into dofs and values
     dh::DH
     closed::ScalarWrapper{Bool}
