@@ -54,8 +54,8 @@ end
 """
 A `Grid` is a collection of `Cells` and `Node`s which covers the computational domain, together with Sets of cells, nodes and faces.
 """
-mutable struct Grid{dim,N,T<:Real,M}
-    cells::Vector{Cell{dim,N,M}}
+mutable struct Grid{dim,N,T<:Real,M,TCells<:AbstractVector{Cell{dim,N,M}}}
+    cells::TCells
     nodes::Vector{Node{dim,T}}
     # Sets
     cellsets::Dict{String,Set{Int}}

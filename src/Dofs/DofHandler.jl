@@ -11,7 +11,7 @@
 
 Construct a `DofHandler` based on the grid `grid`.
 """
-struct DofHandler{dim,N,T,M}
+struct DofHandler{dim,N,T,M,TG<:Grid{dim,N,T,M}}
     field_names::Vector{Symbol}
     field_dims::Vector{Int}
     # TODO: field_interpolations can probably be better typed: We should at least require
@@ -21,7 +21,7 @@ struct DofHandler{dim,N,T,M}
     cell_dofs::Vector{Int}
     cell_dofs_offset::Vector{Int}
     closed::ScalarWrapper{Bool}
-    grid::Grid{dim,N,T,M}
+    grid::TG
 end
 
 function DofHandler(grid::Grid)
